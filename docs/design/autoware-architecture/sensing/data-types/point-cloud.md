@@ -46,7 +46,7 @@ The lidar driver is expected to output a point cloud with the `PointXYZIRCAEDT` 
 | `R` (return type) | `UINT8`   | `false` | Laser return type for dual return lidars                                     |
 | `C` (channel)     | `UINT16`  | `false` | Channel ID of the laser that measured the point                              |
 | `A` (azimuth)     | `FLOAT32` | `true`  | `atan2(Y, X)`, Horizontal angle from the lidar origin to the point           |
-| `E` (elevation)   | `FLOAT32` | `true`  | `atan2(Z, D)`, Vertical angle from the lidar origin to the point             |
+| `E` (elevation)   | `FLOAT32` | `true`  | `asin(Z, D)`, Vertical angle from the lidar origin to the point              |
 | `D` (distance)    | `FLOAT32` | `true`  | `hypot(X, Y, Z)`, Euclidean distance from the lidar origin to the point      |
 | `T` (time)        | `UINT32`  | `false` | Nanoseconds passed since the time of the header when this point was measured |
 
@@ -97,7 +97,7 @@ This lidar has 2 modes for reporting reflectivity:
 
 If you are using linear mapping mode, you should map from [0, 255] to [0, 100] when constructing the point cloud.
 
-If you are using non-linear mapping mode, you should map (hesai to autoware)
+If you are using non-linear mapping mode, you should map (Hesai to Autoware)
 
 - [0, 251] to [0, 100] and
 - [252, 254] to [101, 255]
@@ -110,7 +110,7 @@ when constructing the point cloud.
 
 This lidar has 2 modes for reporting reflectivity similar to Velodyne VLP-16, only the ranges are slightly different.
 
-You should map (livox to autoware)
+You should map (Livox to Autoware)
 
 - [0, 150] to [0, 100] and
 - [151, 255] to [101, 255]
@@ -148,16 +148,21 @@ So it is advised to map the [0, 255] to [0, 100] range.
 
 ### Return type
 
-Various lidars support multiple return modes. Velodyne lidars support **Strongest** and **Last** return modes.
+Many lidars support multiple return modes. For example, Velodyne lidars support **Strongest** and **Last** return modes for single returns, and **Dual** for up to two returns per laser firing.
 
 In the `PointXYZIRC` and `PointXYZIRCAEDT` types, the `R` field represents the return type with a `UINT8`.
-The return type is vendor-specific. The following table provides an example of return type definitions.
+The return type is vendor-specific. The following table provides an example of return type definitions for Velodyne lidar.
 
-| R (return type) | Description          |
-| --------------- | -------------------- |
-| `0`             | Unknown / Not Marked |
-| `1`             | Strongest            |
-| `2`             | Last                 |
+| Applicable return mode | R (return type) | Description             |
+| ---------------------- | --------------- | ----------------------- |
+| All modes              | `0`             | Unknown/invalid         |
+| Strongest              | `1`             | Strongest (single)      |
+| Last                   | `2`             | Last (single)           |
+| Dual                   | `3`             | Strongest, first (dual) |
+| Dual                   | `4`             | Strongest, last (dual)  |
+| Dual                   | `5`             | Weak, first (dual)      |
+| Dual                   | `6`             | Weak, last (dual)       |
+| Dual                   | `7`             | Only (dual)             |
 
 ### Channel
 
@@ -167,6 +172,7 @@ In various lidar manuals or literature, it can also be called _laser id_, _ring_
 For Velodyne VLP-16, there are 16 channels. Default order of channels in drivers are generally in firing order.
 
 In the `PointXYZIRC` and `PointXYZIRCAEDT` types, the `C` field represents the vertical channel ID with a `UINT16`.
+For a sensor where channels are not used, the value will be set to zero.
 
 ### Azimuth
 
@@ -178,7 +184,7 @@ In the `PointXYZIRCAEDT` type, the `A` field represents the azimuth angle in rad
 ### Elevation
 
 The elevation field gives the vertical angle between the optical origin of the lidar and the point.
-In the `PointXYZIRCAEDT` type, the `E` field represents the elevation angle in radians (clockwise) with a `FLOAT32`.
+In the `PointXYZIRCAEDT` type, the `E` field represents the elevation angle from horizontal in radians (counter-clockwise) with a `FLOAT32`.
 
 #### Solid state and petal pattern lidars
 
@@ -186,9 +192,9 @@ In the `PointXYZIRCAEDT` type, the `E` field represents the elevation angle in r
 
     This section is subject to change. Following are suggestions and open for discussion.
 
-For solid state lidars that have lines, assign row number as the channel id.
+For solid state lidars that have lines, the channel ID is assigned as the row number.
 
-For petal pattern lidars, you can keep channel 0.
+For petal pattern lidars without channels. the channel is set to zero.
 
 ### Time stamp
 
